@@ -11,8 +11,10 @@ Token = namedtuple('Token', 'pos_range string suffix')
 # encapsulates a contiguous range of tokens
 class Tokens(Sequence):
 
-    def __init__(self, data_sequence, regex=".*"):
-        self.regex = regex
+    def __init__(self, data_sequence, regex=None):
+
+        if regex is None:
+            regex = re.compile(r'.*')
 
         first_element = data_sequence[0]
         if isinstance(first_element, str):
@@ -21,7 +23,7 @@ class Tokens(Sequence):
 
             proto_tokens = []
 
-            for match in re.finditer(regex, self.string):
+            for match in regex.finditer(self.string):
                 proto_tokens.append(match.span())
 
             # grab each token's pos_range, content, and suffix

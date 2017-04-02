@@ -1,5 +1,6 @@
 import textwrap
 from token_primer import Tokens
+import re
 import unittest
 
 import ipdb
@@ -27,7 +28,7 @@ class TokenRef(unittest.TestCase):
         tic thinking, in which philippic wit is still illicit.
         """[1:])
 
-        self.words = Tokens(self.canvas, '\\b\\w+\\b')
+        self.words = Tokens(self.canvas, re.compile('\\b\\w+\\b'))
 
     def test_num_first(self):
         self.assertEqual(self.words[0].string, "Writing")
@@ -142,8 +143,63 @@ class TokenRef(unittest.TestCase):
         self.assertEqual(tokens[0].string, "philippic")
         self.assertEqual(tokens[-1].string, "still")
 
+    def test_num_range_mixed(self):
+        #target=
+        # philippic wit is still
+        tokens = self.words[-5:'ill':'ie'] # mixed, inclusive left, exclusive right
+        self.assertEqual(tokens[0].string, "philippic")
+        self.assertEqual(tokens[-1].string, "is")
 
-    def tearDown(self):
-        self.canvas = ""
+    def test_regex_unbounded(self):
+        #target=
+        # childish insights within rigid limits,
+        # writing shtick which might instill priggish misgiv-
+        # ings in critics blind with hindsight. I dismiss nit-
+        # picking criticism which irts with philistinism. I
+        # bitch; I kibitz - griping whilst criticizing dimwits,
+        # sniping whilst indicting nitwits, dismissing simplis-
+        # tic thinking, in which philippic wit is still illicit.
 
+        tokens = self.words['ild':] # mixed, implicit inclusive
+        self.assertEqual(tokens[0].string, "childish")
+        self.assertEqual(tokens[-1].string, "illicit")
 
+    def test_regex_unbounded_exclusive(self):
+        #target=
+        # insights within rigid limits,
+        # writing shtick which might instill priggish misgiv-
+        # ings in critics blind with hindsight. I dismiss nit-
+        # picking criticism which irts with philistinism. I
+        # bitch; I kibitz - griping whilst criticizing dimwits,
+        # sniping whilst indicting nitwits, dismissing simplis-
+        # tic thinking, in which philippic wit is still illicit.
+
+        tokens = self.words['ild'::'e'] # mixed, implicit inclusive
+        self.assertEqual(tokens[0].string, "insights")
+        self.assertEqual(tokens[-1].string, "illicit")
+
+class TokenComposition(unittest.TestCase):
+
+    def setUp(self):
+        self.canvas = textwrap.dedent(
+        """
+        Enfettered, these sentences repress free speech. The
+        text deletes selected letters. We see the revered exegete
+        reject metred verse: the sestet, the tercet - even les
+        scenes elevees en grec. He rebels. 
+        
+        He sets new precedents.
+        He lets cleverness exceed decent levels. He eschews the
+        esteemed genres, the expected themes - even les belles
+        lettres en vers. He prefers the perverse French esthetes:
+        Verne, Peret, Genet, Perec - hence, he pens fervent
+        screeds, then enters the street, where he sells these let-
+        terpress newsletters, three cents per sheet. He engen-
+        ders perfect newness wherever we need fresh terms.
+        """[1:])
+
+        self.words = Tokens(self.canvas, re.compile(r'\b\w+\b'))
+        self.lines = Tokens(self.canvas,re.compile('([^\n]+)|((?<=\n)(?=\n))', re.MULTILINE))
+
+    def test_line(self):
+        self.assertEqual(self.lines[1].string[0:4], "text")
