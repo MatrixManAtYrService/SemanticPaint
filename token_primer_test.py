@@ -1,5 +1,5 @@
 import textwrap
-import prose_primer as Prose
+from token_primer import Tokens
 import unittest
 
 import ipdb
@@ -27,7 +27,7 @@ class TokenRef(unittest.TestCase):
         tic thinking, in which philippic wit is still illicit.
         """[1:])
 
-        self.words = Prose.Tokens(self.canvas, '\\b\\w+\\b')
+        self.words = Tokens(self.canvas, '\\b\\w+\\b')
 
     def test_num_first(self):
         self.assertEqual(self.words[0].string, "Writing")
@@ -139,8 +139,8 @@ class TokenRef(unittest.TestCase):
         #target=
         # philippic wit is still illicit.
         tokens = self.words[-5:'ill'] # mixed, implicit inclusive
-        self.assertEqual(tokens[0].string, "wit")
-        self.assertEqual(tokens[-1].string, "illicit")
+        self.assertEqual(tokens[0].string, "philippic")
+        self.assertEqual(tokens[-1].string, "still")
 
 
     def tearDown(self):
