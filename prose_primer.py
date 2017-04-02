@@ -12,6 +12,7 @@ Token = namedtuple('Token', 'pos_range string suffix')
 class Tokens(Sequence):
 
     def __init__(self, data_sequence, regex=".*"):
+        self.regex = regex
 
         first_element = data_sequence[0]
         if isinstance(first_element, str):
@@ -30,7 +31,8 @@ class Tokens(Sequence):
                 curr_str = self.string[curr[0] : curr[1]]
                 curr_suffix = self.string[curr[1] : nxt[0]]
                 self._tokens.append(Token(curr_pos_range,
-                                          curr_str,
+
+                    curr_str,
                                           curr_suffix))
             # the last token gets no suffix
             nxt_pos_range = (nxt[0], nxt[1])
@@ -47,8 +49,9 @@ class Tokens(Sequence):
             for token in data_sequence:
                 begin_idx = len(self.string)
                 if not first:
-                    self.string.append(token.suffix)
-                self.string.append(token.string)
+                    self.string = "%s%s" % (token.suffix, token.string)
+                else:
+                    self.string = token.string
                 self._tokens.append(Token((begin_idx, begin_idx + len(token.string)),
                                           token.string,
                                           token.suffix))
@@ -58,40 +61,66 @@ class Tokens(Sequence):
         self.pos_range = (self._tokens[0].pos_range[0], 
                           self._tokens[-1].pos_range[1])
 
-    def by_num(self, num):
-        return self._tokens[num]
+    def by_num_or_regex(self, key, beyond=0):
+        if isinstance(key, int):
+            return self._tokens[beyond:][key]
+        elif isinstance(key, str):
+            try:
+                re.compile(key)
+            except re.error:
+                raise KeyError("string key must be a valid regex")
 
-    def by_regex(self, regex):
-        try:
-            re.compile(regex)
-        except re.error:
-            raise KeyError("string key must be a valid regex")
+            for token in self._tokens[beyond:]:
+                if re.search(key, token.string):
+                    return token;
+            return None
+        else:
+            raise KeyError("key must be of type int or str")
 
-        for token in self._tokens:
-            if re.match(regex, token.string):
-                return token;
-        return None
+    #          [1,2,3,4,5][1 : 5 : ie] = 1,2,3,4
+    def by_slice(self, start, stop, clude):
+        if start is None:
+            start_idx = None
+        else:
+            marker_token = self.by_num_or_regex(start);
+            if clude[0] == 'i':
+                start_idx = self._tokens.index(marker_token)
+            elif clude[0] == 'e':
+                start_idx = self._tokens.index(marker_token) + 1
+                if start_idx >= len(self._tokens):
+                    raise ArgumentException("first exclusive range marker can't be last token")
+            else:
+                raise ArgumentException("first character of slice center must be 'e'[xclusive] or 'i'[nclusive]")
 
-    def by_slice(self, slice):
-        raise NotImplemented("TODO: implement slicing")
+        if stop is None:
+            stop_idx = None 
+        else:
+            marker_token = self.by_num_or_regex(stop, beyond=start_idx)
+            if clude[1] == 'i':
+                stop_idx = self._tokens.index(marker_token) + 1
+            elif clude[1] == 'e':
+                stop_idx = self._tokens.index(marker_token)
+                if stop_idx < 0:
+                    raise ArgumentException("last exclusive range marker can't refer first token")
+            else:
+                raise ArgumentException("last character of slice center must be 'e(xclusive) or i(nclusive)'")
+
+        return self._tokens[start_idx : stop_idx]
 
         
     def __getitem__(self, key):
 
-        # refer to a token by index
-        if isinstance(key, int):
-            return self.by_num(key)
+        # refer to a token by index or regex
+        if not isinstance(key, slice):
+            return self.by_num_or_regex(key)
 
-        # returns the first token matching the regex key
-        elif isinstance(key, str):
-            return self.by_regex(key)
-
-        # returns a list of tokens between the indicated positions
-        elif isinstance(key, slice):
-            return self.by_slice(key)
-
+        # refer to a range of tokens
         else:
-            raise KeyError("key must be of type int or str")
+            if key.step is None:
+                return self.by_slice(key.start, key.stop, 'ii')
+            else:
+                return self.by_slice(key.start, key.stop, key.step)
+
 
     def __len__(self):
         return len(self._tokens)
