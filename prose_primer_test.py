@@ -49,10 +49,10 @@ class ProseRef(unittest.TestCase):
         line_five = self.prose.line['j':'ll':'ie'][1]
         self.assertEqual(line_five.word['ch'].string, 'chic')
 
-class NextTest(unittest.TestCase):
+class  ProseChage(unittest.TestCase):
 
     def setUp(self):
-        self.canvas = textwrap.dedent(
+        self.A = textwrap.dedent(
         """
         Enfettered, these sentences repress free speech. The
         text deletes selected letters. We see the revered exegete
@@ -69,9 +69,56 @@ class NextTest(unittest.TestCase):
         ders perfect newness wherever we need fresh terms.
         """[1:])
 
-        self.prose = Prose(self.canvas)
+        self.B = textwrap.dedent(
+        """
+        An Excerpt from Eunoia, by Christian Bok
 
-    def test_empty_line(self):
-        # this line just to make the test runt :w
+        Enfettered, these sentences repress free speech. The
+        text deletes selected letters. We see the revered exegete
+        reject metred verse: the sestet, the tercet - even les
+        scenes elevees en grec. He rebels.
 
-        self.assertEqual(1,1)
+        He sets new precedents.
+        He lets cleverness exceed decent levels. He eschews the
+        esteemed genres, the expected themes - even les belles
+        lettres en vers. He prefers the perverse French esthetes:
+        Verne, Peret, Genet, Perec - hence, he pens fervent
+        screeds, then enters the street, where he sells these let-
+        terpress newsletters, three cents per sheet. He engen-
+        ders perfect newness wherever we need fresh terms.
+        """[1:])
+
+        self.C = textwrap.dedent(
+        """
+        An Excerpt from Eunoia, by Christian Bok
+
+        Enfettered, these sentences repress free speech. The text deletes selected letters. We see the revered exegete reject metred verse: the sestet, the tercet - even les scenes elevees en grec. He rebels.
+
+        He sets new precedents.
+        He lets cleverness exceed decent levels. He eschews the esteemed genres, the expected themes - even les belles lettres en vers. He prefers the perverse French esthetes: Verne, Peret, Genet, Perec - hence, he pens fervent screeds, then enters the street, where he sells these letterpress newsletters, three cents per sheet. He engenders perfect newness wherever we need fresh terms.
+        """[1:])
+
+        self.one = Prose(self.A)
+        self.two = Prose(self.B)
+        self.three = Prose(self.C)
+
+    def test_empty_lines(self):
+        self.assertEqual(len(self.one.line), 13)
+        self.assertEqual(len(self.two.line), 15)
+        self.assertEqual(len(self.three.line), 6)
+
+    def test_partially_tolerate_structure_changes_1(self):
+        the_expected_themes_1 = [x.string for x in   self.one.line['esteemed'].word['the':'themes']]
+        the_expected_themes_2 = [x.string for x in   self.two.line['esteemed'].word['the':'themes']]
+        the_expected_themes_3 = [x.string for x in self.three.line['esteemed'].word['the':'themes']]
+
+        self.assertEqual(the_expected_themes_1, the_expected_themes_2, msg="referents unchanged")
+        self.assertNotEqual(the_expected_themes_1, the_expected_themes_3, msg="first bookend now matches earlier in sentence")
+
+    def test_partially_tolerate_structure_changes_2(self):
+        the_expected_themes_1 = [x.string for x in   self.one.word[47:3]]
+        the_expected_themes_2 = [x.string for x in   self.two.word[47:3]]
+        the_expected_themes_3 = [x.string for x in self.three.word[47:3]]
+
+        self.assertNotEqual(the_expected_themes_1, the_expected_themes_2, msg="preceeding words added")
+        self.assertEqual(   the_expected_themes_2, the_expected_themes_3, msg="only whitespace changes")
