@@ -10,6 +10,9 @@ def undebug():
     ipdb.set_trace = f
     IPython.embed = f
 
+word_mask = re.compile('\\b\\w+\\b')
+line_mask = re.compile('([^\n]+)|((?<=\n)(?=\n))', re.MULTILINE)
+
 class TokenRef(unittest.TestCase):
 
     def setUp(self):
@@ -28,7 +31,7 @@ class TokenRef(unittest.TestCase):
         tic thinking, in which philippic wit is still illicit.
         """[1:])
 
-        self.words = Tokens(self.canvas, re.compile('\\b\\w+\\b'))
+        self.words = Tokens(self.canvas, word_mask)
 
     def test_num_first(self):
         self.assertEqual(self.words[0].string, "Writing")
@@ -178,7 +181,7 @@ class TokenRef(unittest.TestCase):
         self.assertEqual(tokens[0].string, "insights")
         self.assertEqual(tokens[-1].string, "illicit")
 
-class TokenComposition(unittest.TestCase):
+class EdgeCases(unittest.TestCase):
 
     def setUp(self):
         self.canvas = textwrap.dedent(
@@ -186,8 +189,8 @@ class TokenComposition(unittest.TestCase):
         Enfettered, these sentences repress free speech. The
         text deletes selected letters. We see the revered exegete
         reject metred verse: the sestet, the tercet - even les
-        scenes elevees en grec. He rebels. 
-        
+        scenes elevees en grec. He rebels.
+
         He sets new precedents.
         He lets cleverness exceed decent levels. He eschews the
         esteemed genres, the expected themes - even les belles
@@ -198,8 +201,17 @@ class TokenComposition(unittest.TestCase):
         ders perfect newness wherever we need fresh terms.
         """[1:])
 
-        self.words = Tokens(self.canvas, re.compile(r'\b\w+\b'))
-        self.lines = Tokens(self.canvas,re.compile('([^\n]+)|((?<=\n)(?=\n))', re.MULTILINE))
+        self.lines = Tokens(self.canvas, line_mask)
 
     def test_line(self):
         self.assertEqual(self.lines[1].string[0:4], "text")
+
+    def test_token_init(self):
+        word = Tokens(self.lines, word_mask)
+        self.assertEqual(word['rn'].string, "cleverness")
+
+    def test_token_empty(self):
+        no_tokens = Tokens("", word_mask)
+        self.assertEqual(len(no_tokens), 0)
+
+

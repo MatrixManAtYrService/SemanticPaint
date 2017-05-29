@@ -6,24 +6,51 @@ import IPython
 import ipdb
 from debug import undebug
 
-Token = namedtuple('Token', 'pos_range string suffix')
+# todo: replaced namedtuple with a proper class so that we can add fields
+class Token:
+    def __init__(self, _pos_range, _string, _suffix):
+        self.pos_range = _pos_range
+        self.string = _string
+        self.suffix = _suffix
 
 # encapsulates a contiguous range of tokens
 class Tokens(Sequence):
 
-    def __init__(self, data_sequence, regex=None):
+    def __init__(self, data_sequence, regex):
+        self.regex = regex
 
-        if regex is None:
-            regex = re.compile(r'.*')
+        arg_type = type(data_sequence)
 
-        first_element = data_sequence[0]
-        if isinstance(first_element, str):
-            # initialize from a string
+        # pull the string out of a single token argument
+        if arg_type is Token:
+            data_sequence = data_sequence.string
+
+        # construct the string from a muilti-token argument
+        elif arg_type is not str:
+            try:
+                data_iter = iter(data_sequence)
+
+                inner_type = type(next(data_iter))
+                if inner_type is Token:
+                    new_data_sequence = ""
+                    for token in data_sequence:
+                        new_data_sequence += token.string
+                    data_sequence = new_data_sequence
+                    arg_type = str
+            except TypeError:
+                pass
+
+        # do nothing for an empty string
+        if not any(data_sequence):
+            self._tokens = []
+            return
+
+        # find tokens in the string
+        if arg_type is str:
             self.string = data_sequence
-
             proto_tokens = []
 
-            for match in regex.finditer(self.string):
+            for match in self.regex.finditer(self.string):
                 proto_tokens.append(match.span())
 
             # grab each token's pos_range, content, and suffix
@@ -33,8 +60,7 @@ class Tokens(Sequence):
                 curr_str = self.string[curr[0] : curr[1]]
                 curr_suffix = self.string[curr[1] : nxt[0]]
                 self._tokens.append(Token(curr_pos_range,
-
-                    curr_str,
+                                          curr_str,
                                           curr_suffix))
             # the last token gets no suffix
             nxt_pos_range = (nxt[0], nxt[1])
@@ -43,25 +69,8 @@ class Tokens(Sequence):
                                       nxt_str,
                                       ""))
 
-        elif isinstance(first_element, Token):
-            # initialize from a list of tokens
-            self.string = ""
-            self._tokens = []
-            first = True
-            for token in data_sequence:
-                begin_idx = len(self.string)
-                if not first:
-                    self.string = "%s%s" % (token.suffix, token.string)
-                else:
-                    self.string = token.string
-                self._tokens.append(Token((begin_idx, begin_idx + len(token.string)),
-                                          token.string,
-                                          token.suffix))
-        else:
-            raise ArugmentError("Second argument must be either a string or a sequence of tokens")
-
-        self.pos_range = (self._tokens[0].pos_range[0], 
-                          self._tokens[-1].pos_range[1])
+    def __repr__(self):
+        return "{} tokens, matched by {}".format(len(self._tokens), self.regex)
 
     def by_num_or_regex(self, key, beyond=0):
         if isinstance(key, int):
@@ -90,12 +99,12 @@ class Tokens(Sequence):
             elif clude[0] == 'e':
                 start_idx = self._tokens.index(marker_token) + 1
                 if start_idx >= len(self._tokens):
-                    raise ArgumentException("first exclusive range marker can't be last token")
+                    raise TypeError("first exclusive range marker can't be last token")
             else:
-                raise ArgumentException("first character of slice center must be 'e'[xclusive] or 'i'[nclusive]")
+                raise TypeError("first character of slice center must be 'e'[xclusive] or 'i'[nclusive]")
 
         if stop is None:
-            stop_idx = None 
+            stop_idx = None
         else:
             marker_token = self.by_num_or_regex(stop, beyond=start_idx)
             if clude[1] == 'i':
@@ -103,13 +112,13 @@ class Tokens(Sequence):
             elif clude[1] == 'e':
                 stop_idx = self._tokens.index(marker_token)
                 if stop_idx < 0:
-                    raise ArgumentException("last exclusive range marker can't refer first token")
+                    raise TypeError("last exclusive range marker can't refer first token")
             else:
-                raise ArgumentException("last character of slice center must be 'e(xclusive) or i(nclusive)'")
+                raise TypeError("last character of slice center must be 'e(xclusive) or i(nclusive)'")
 
         return self._tokens[start_idx : stop_idx]
 
-        
+
     def __getitem__(self, key):
 
         # refer to a token by index or regex
