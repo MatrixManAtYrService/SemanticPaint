@@ -205,20 +205,55 @@ class TokenRef(unittest.TestCase):
 
         canvas = "Is counter induction perhaps more reasonable than induction?"
         mask = re.compile('([^\\s]+)|((?<=\s)(?=\\s))')
-
         words = Tokens(canvas, mask)
-        self.assertEqual(next(words['perhaps'].Before()).string, 'induction')
 
-        # asserting this twicw to be sure that the returned generator is indeed being reset between calls
-        self.assertEqual(next(words['perhaps'].Before()).string, 'induction')
+        self.assertEqual(next(words['perhaps'].before()).string, 'induction')
+        # asserting this twice to be sure that the returned generator is indeed being reset between calls
+        self.assertEqual(next(words['perhaps'].before()).string, 'induction')
+        self.assertEqual(words[:'perhaps'][-1].string, 'induction')
 
     def test_tokens_reach_forward(self):
 
         canvas = "Is counter induction perhaps more reasonable than induction?"
         mask = re.compile('([^\\s]+)|((?<=\s)(?=\\s))')
-
         words = Tokens(canvas, mask)
-        self.assertEqual(next(words['perhaps'].After()).string, 'more')
+
+        self.assertEqual(next(words['perhaps'].after()).string, 'more')
+        self.assertEqual(words['perhaps'::'e'][0].string, 'more')
+
+    def test_loop_search(self):
+
+        # two canvasses, both pointint to a name with a colon
+        canvas_A = "His hobby is: spinning gold.  His name is: Rumplestiltskin"
+        canvas_B = "Hos hoppy is: spinning gold.  His name is kind of funny: Rumplestiltskin"
+
+        # semantic paint for either canvas:
+        word_mask = re.compile(r'\b\w+\b')
+        def is_name(candidate):
+            try:
+                if next(candidate.before()).suffix == ': ':
+                    for preceeding_token in candidate.before():
+                        if preceeding_token.string == 'name':
+                            return True
+            except StopIteration:
+                pass
+            return False
+
+        # semantic paint for canvas A:
+        A = Tokens(canvas_A, word_mask)
+        name_A = list(filter(is_name, A))[0]
+
+        # semantic paint for canvas B:
+        B = Tokens(canvas_B, word_mask)
+        name_B = list(filter(is_name, B))[0]
+
+        # test code: the above paint should indicate the same name, despite the canvas differences
+
+        self.assertEqual(name_A.string, "Rumplestiltskin")
+        self.assertEqual(name_B.string, "Rumplestiltskin")
+
+
+
 
 
 

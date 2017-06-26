@@ -36,10 +36,10 @@ class Token:
 
         return repr_str
 
-    def After(self):
+    def after(self):
         return (x for x in self.context[self.index + 1:])
 
-    def Before(self):
+    def before(self):
         return (x for x in reversed(self.context[:self.index]))
 
 
