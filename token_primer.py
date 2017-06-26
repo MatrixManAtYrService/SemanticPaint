@@ -1,17 +1,47 @@
 from collections import namedtuple
 from collections import Sequence
 import re
+from itertools import tee
 
 import IPython
 import ipdb
 from debug import undebug
 
-# todo: replaced namedtuple with a proper class so that we can add fields
 class Token:
+
     def __init__(self, _pos_range, _string, _suffix):
         self.pos_range = _pos_range
         self.string = _string
         self.suffix = _suffix
+
+
+    def Finalize(self, _index, _context):
+        self.index = _index
+        self.context = _context
+
+    def __repr__(self):
+
+        if self.index == 0:
+            repr_str = ""
+        else:
+            repr_str = "<- "
+
+        if self.suffix !=  "":
+            repr_str += "[{}|{}]".format(self.string, self.suffix)
+        else:
+            repr_str += "[{}]".format(self.string)
+
+        if (self.index + 1) != len(self.context):
+            repr_str += "->"
+
+        return repr_str
+
+    def After(self):
+        return (x for x in self.context[self.index + 1:])
+
+    def Before(self):
+        return (x for x in reversed(self.context[:self.index]))
+
 
 # encapsulates a contiguous range of tokens
 class Tokens(Sequence):
@@ -61,13 +91,18 @@ class Tokens(Sequence):
                 curr_suffix = self.string[curr[1] : nxt[0]]
                 self._tokens.append(Token(curr_pos_range,
                                           curr_str,
-                                          curr_suffix))
+                                          curr_suffix
+                                          ))
             # the last token gets no suffix
             nxt_pos_range = (nxt[0], nxt[1])
             nxt_str = self.string[nxt[0] : nxt[1]]
             self._tokens.append(Token(nxt_pos_range,
                                       nxt_str,
                                       ""))
+
+            # inform each token of its surroundings
+            for i in range(len(self._tokens)):
+                self._tokens[i].Finalize(i, self._tokens)
 
     def __repr__(self):
         return "{} tokens, matched by {}".format(len(self._tokens), self.regex)
@@ -92,29 +127,54 @@ class Tokens(Sequence):
     def by_slice(self, start, stop, clude):
         if start is None:
             start_idx = None
-        else:
+        elif type(start) is int:
+            # index beginning
+            if clude[0] == 'i':
+                start_idx = start
+            # index beginning bookend
+            elif clude[0] == 'e':
+                start_idx = start + 1
+        elif type(start) is str:
             marker_token = self.by_num_or_regex(start);
+            # pattern-match beginning
             if clude[0] == 'i':
                 start_idx = self._tokens.index(marker_token)
+
+            # pattern-match beginning bookend
             elif clude[0] == 'e':
                 start_idx = self._tokens.index(marker_token) + 1
                 if start_idx >= len(self._tokens):
                     raise TypeError("first exclusive range marker can't be last token")
             else:
                 raise TypeError("first character of slice center must be 'e'[xclusive] or 'i'[nclusive]")
+        else:
+            raise TypeError("first term of slice must be None, int, or string")
 
         if stop is None:
             stop_idx = None
-        else:
+        elif type(stop) is int:
+            # index ending
+            if clude[0] == 'i':
+                stop_idx = stop
+            # index ending bookend
+            elif clude[0] == 'e':
+                stop_idx = stop - 1
+        elif type(stop) is str:
             marker_token = self.by_num_or_regex(stop, beyond=start_idx)
+
+            # pattern-match ending
             if clude[1] == 'i':
                 stop_idx = self._tokens.index(marker_token) + 1
+
+            # parttern-match ending bookend
             elif clude[1] == 'e':
                 stop_idx = self._tokens.index(marker_token)
                 if stop_idx < 0:
                     raise TypeError("last exclusive range marker can't refer first token")
             else:
                 raise TypeError("last character of slice center must be 'e(xclusive) or i(nclusive)'")
+        else:
+            raise TypeError("second term in slice must be None, int, or string")
 
         return self._tokens[start_idx : stop_idx]
 
@@ -128,7 +188,11 @@ class Tokens(Sequence):
         # refer to a range of tokens
         else:
             if key.step is None:
-                return self.by_slice(key.start, key.stop, 'ii')
+                # since cannonical slice syntax goes:  foo[x:y]
+                # where x is the first included item
+                # and y is the first non-included item
+                # the default capture mode is [include, exclude)
+                return self.by_slice(key.start, key.stop, 'ie')
             else:
                 return self.by_slice(key.start, key.stop, key.step)
 

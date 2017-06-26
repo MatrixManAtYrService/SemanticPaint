@@ -68,9 +68,9 @@ class TokenRef(unittest.TestCase):
 
     def test_regex_range_impl_ii(self):
         #target = "thinking, in which philippic"
-        tokens = self.words['think' : '.*pp']            # implicityly inclusive
+        tokens = self.words['think' : '.*pp']            # implicityly inclusive -> exclusive
         self.assertEqual(tokens[0].string, "thinking")
-        self.assertEqual(tokens[-1].string, "philippic")
+        self.assertEqual(tokens[-1].string, "which")
 
     def test_regex_range_expl_ii(self):
         #target = "thinking, in which philippic"
@@ -120,10 +120,10 @@ class TokenRef(unittest.TestCase):
 
     def test_num_range(self):
         #target =
-        # Writing is inhibiting. Sighing
+        # Writing is inhibiting
         tokens = self.words[:3] # unbounded left
         self.assertEqual(tokens[0].string, "Writing")
-        self.assertEqual(tokens[-1].string, "Sighing")
+        self.assertEqual(tokens[-1].string, "inhibiting")
 
     def test_num_range_reverse(self):
         #target=
@@ -141,10 +141,10 @@ class TokenRef(unittest.TestCase):
 
     def test_num_range_mixed(self):
         #target=
-        # philippic wit is still illicit.
-        tokens = self.words[-5:'ill'] # mixed, implicit inclusive
+        # philippic wit is
+        tokens = self.words[-5:'ill'] # mixed, implicit inclusive -> exclusive
         self.assertEqual(tokens[0].string, "philippic")
-        self.assertEqual(tokens[-1].string, "still")
+        self.assertEqual(tokens[-1].string, "is")
 
     def test_num_range_mixed(self):
         #target=
@@ -181,6 +181,48 @@ class TokenRef(unittest.TestCase):
         self.assertEqual(tokens[0].string, "insights")
         self.assertEqual(tokens[-1].string, "illicit")
 
+    def test_range_string(self):
+        self.assertEqual(self.canvas[23:37],
+                         "Sighing, I sit")
+
+    def test_range_token(self):
+        self.assertEqual([x.string for x in self.words[3:6]],
+                         ["Sighing", "I", "sit"])
+
+
+    def test_range_offset(self):
+        self.assertEqual(self.canvas['pp',r'\+1'].string, "wit")
+        self.assertEqual(self.cancas['pp',r'\-1'].string, "which")
+
+    def test_range_offset(self):
+        canvas = "The symbol for symmetric difference is \\ , which is a commonly used escape character"
+        mask = re.compile('([^\\s]+)|((?<=\s)(?=\\s))')
+        words = Tokens(canvas, mask)
+
+        self.assertEqual(words[6].string, '\\')
+
+    def test_tokens_reach_back(self):
+
+        canvas = "Is counter induction perhaps more reasonable than induction?"
+        mask = re.compile('([^\\s]+)|((?<=\s)(?=\\s))')
+
+        words = Tokens(canvas, mask)
+        self.assertEqual(next(words['perhaps'].Before()).string, 'induction')
+
+        # asserting this twicw to be sure that the returned generator is indeed being reset between calls
+        self.assertEqual(next(words['perhaps'].Before()).string, 'induction')
+
+    def test_tokens_reach_forward(self):
+
+        canvas = "Is counter induction perhaps more reasonable than induction?"
+        mask = re.compile('([^\\s]+)|((?<=\s)(?=\\s))')
+
+        words = Tokens(canvas, mask)
+        self.assertEqual(next(words['perhaps'].After()).string, 'more')
+
+
+
+
 class EdgeCases(unittest.TestCase):
 
     def setUp(self):
@@ -213,5 +255,6 @@ class EdgeCases(unittest.TestCase):
     def test_token_empty(self):
         no_tokens = Tokens("", word_mask)
         self.assertEqual(len(no_tokens), 0)
+
 
 

@@ -107,18 +107,24 @@ class  ProseChage(unittest.TestCase):
         self.assertEqual(len(self.two.line), 15)
         self.assertEqual(len(self.three.line), 6)
 
-    def test_partially_tolerate_structure_changes_1(self):
-        the_expected_themes_1 = [x.string for x in   self.one.line['esteemed'].word['the':'themes']]
-        the_expected_themes_2 = [x.string for x in   self.two.line['esteemed'].word['the':'themes']]
-        the_expected_themes_3 = [x.string for x in self.three.line['esteemed'].word['the':'themes']]
+    def test_line_word(self):
+        hit_1 = [x.string for x in   self.one.line['esteemed'].word['the':'themes']]
+        hit_2 = [x.string for x in   self.two.line['esteemed'].word['the':'themes']]
+        hit_3 = [x.string for x in self.three.line['esteemed'].word['the':'themes']]
 
-        self.assertEqual(the_expected_themes_1, the_expected_themes_2, msg="referents unchanged")
-        self.assertNotEqual(the_expected_themes_1, the_expected_themes_3, msg="first bookend now matches earlier in sentence")
+        self.assertEqual(hit_1, hit_2, msg="referents unchanged")
+        self.assertNotEqual(hit_1, hit_3, msg="first bookend now matches earlier in sentence")
 
-    def test_partially_tolerate_structure_changes_2(self):
-        the_expected_themes_1 = [x.string for x in   self.one.word[47:3]]
-        the_expected_themes_2 = [x.string for x in   self.two.word[47:3]]
-        the_expected_themes_3 = [x.string for x in self.three.word[47:3]]
+    def test_line(self):
+        hit_1 = self.one.line[7].string[17:35]
+        hit_2 = self.two.line[7].string[17:35]
 
-        self.assertNotEqual(the_expected_themes_1, the_expected_themes_2, msg="preceeding words added")
-        self.assertEqual(   the_expected_themes_2, the_expected_themes_3, msg="only whitespace changes")
+        self.assertNotEqual(hit_1, hit_2, msg="preceeding words added")
+
+    def test_word(self):
+        hit_1 = [x.string for x in   self.one.word[47:49]]
+        hit_2 = [x.string for x in   self.two.word[47:49]]
+        hit_3 = [x.string for x in self.three.word[47:49]]
+
+        self.assertNotEqual(hit_1, hit_2, msg="preceeding words added")
+        self.assertEqual(   hit_2, hit_3, msg="only whitespace changes")
