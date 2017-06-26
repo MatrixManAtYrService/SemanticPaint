@@ -42,6 +42,11 @@ class Token:
     def before(self):
         return (x for x in reversed(self.context[:self.index]))
 
+    def __radd__(self, other):
+        if type(other) is str:
+            return other + self.string + self.suffix
+        else:
+            return self.string + self.suffix
 
 # encapsulates a contiguous range of tokens
 class Tokens(Sequence):
@@ -154,20 +159,20 @@ class Tokens(Sequence):
             stop_idx = None
         elif type(stop) is int:
             # index ending
-            if clude[0] == 'i':
+            if clude[-1] == 'i':
                 stop_idx = stop
             # index ending bookend
-            elif clude[0] == 'e':
+            elif clude[-1] == 'e':
                 stop_idx = stop - 1
         elif type(stop) is str:
             marker_token = self.by_num_or_regex(stop, beyond=start_idx)
 
             # pattern-match ending
-            if clude[1] == 'i':
+            if clude[-1] == 'i':
                 stop_idx = self._tokens.index(marker_token) + 1
 
             # parttern-match ending bookend
-            elif clude[1] == 'e':
+            elif clude[-1] == 'e':
                 stop_idx = self._tokens.index(marker_token)
                 if stop_idx < 0:
                     raise TypeError("last exclusive range marker can't refer first token")

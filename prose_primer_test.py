@@ -115,11 +115,17 @@ class  ProseChage(unittest.TestCase):
         self.assertEqual(hit_1, hit_2, msg="referents unchanged")
         self.assertNotEqual(hit_1, hit_3, msg="first bookend now matches earlier in sentence")
 
-    def test_line(self):
+    def test_line_added_above_1(self):
         hit_1 = self.one.line[7].string[17:35]
         hit_2 = self.two.line[7].string[17:35]
 
-        self.assertNotEqual(hit_1, hit_2, msg="preceeding words added")
+        self.assertNotEqual(hit_1, hit_2, msg="preceeding words added, ruining count from front")
+
+    def test_line_added_above_2(self):
+        hit_1 = self.one.line[-4].word[2].string
+        hit_2 = self.two.line[-4].word[2].string
+
+        self.assertEqual(hit_1, hit_2, msg="preceeding words added, count from behind still works")
 
     def test_word(self):
         hit_1 = [x.string for x in   self.one.word[47:49]]
@@ -128,3 +134,35 @@ class  ProseChage(unittest.TestCase):
 
         self.assertNotEqual(hit_1, hit_2, msg="preceeding words added")
         self.assertEqual(   hit_2, hit_3, msg="only whitespace changes")
+
+    def test_word_line_generators(self):
+
+        watsky = Prose(textwrap.dedent(
+        """
+        Some days I throw my hands up like this shit right here is hopeless
+        But today I throw my hands up like this shit right here’s the dopest
+        I’ll never sew my family’s holes up saying hocus pocus
+        So I focus love on what is whole and chase my magnum opus
+        There’s so much more life before I leave this skin behind me
+        Right now I’m feeling finer than Aaliyah in the 90s
+        Yeah, today I’m feeling firmly like my faith could never burn me
+        Like I’m apt to move that mountain just by glaring at it sternly
+        """[1:]))
+
+        decade = watsky.line['\d+s'].word[-1]
+        self.assertEqual(decade.string, '90s')
+
+        organ = next(next(watsky.line['Aa'].before()).word['this'].after())
+        self.assertEqual(organ.string, 'skin')
+
+        # the current word regex identifies a single quote as a word boundary
+        # todo: fix this so ^s$ can instead be 'here\'s'
+        #situation = watsky.line['hopeless':'opus':'e'][0].word['here\'s'::'e']
+        situation = watsky.line['hopeless':'opus':'e'][0].word['^s$'::'e']
+        self.assertEqual(sum(situation), 'the dopest')
+
+
+
+
+
+
