@@ -210,6 +210,8 @@ class TokenRef(unittest.TestCase):
         self.assertEqual(next(words['perhaps'].before()).string, 'induction')
         # asserting this twice to be sure that the returned generator is indeed being reset between calls
         self.assertEqual(next(words['perhaps'].before()).string, 'induction')
+
+        # here's another way to do this
         self.assertEqual(words[:'perhaps'][-1].string, 'induction')
 
     def test_tokens_reach_forward(self):
@@ -219,9 +221,11 @@ class TokenRef(unittest.TestCase):
         words = Tokens(canvas, mask)
 
         self.assertEqual(next(words['perhaps'].after()).string, 'more')
+
+        # here's another way to do this
         self.assertEqual(words['perhaps'::'e'][0].string, 'more')
 
-    def test_loop_search(self):
+    def test_loop_search_generators(self):
 
         # two canvasses, both pointint to a name with a colon
         canvas_A = "His hobby is: spinning gold.  His name is: Rumplestiltskin"
@@ -252,9 +256,27 @@ class TokenRef(unittest.TestCase):
         self.assertEqual(name_A.string, "Rumplestiltskin")
         self.assertEqual(name_B.string, "Rumplestiltskin")
 
+    def test_loop_search_slices(self):
+
+        # two canvasses, both pointint to a name with a colon
+        canvas_A = "His hobby is: spinning gold.  His name is: Rumplestiltskin"
+        canvas_B = "Hos hoppy is: spinning gold.  His name is kind of funny: Rumplestiltskin"
+
+        word_mask = re.compile(r'\b\w+\b')
+
+        # semantic paint for canvas A:
+        A = Tokens(canvas_A, word_mask)
+        name_A = next((y for (x, y) in zip(A['name'::'i'], A['name'::'e']) if x.suffix[0] == ':'))
 
 
+        # semantic paint for canvas B:
+        B = Tokens(canvas_B, word_mask)
+        name_B = next((y for (x, y) in zip(A['name'::'i'], A['name'::'e']) if x.suffix[0] == ':'))
 
+        # test code: the above paint should indicate the same name, despite the canvas differences
+
+        self.assertEqual(name_A.string, "Rumplestiltskin")
+        self.assertEqual(name_B.string, "Rumplestiltskin")
 
 
 
