@@ -10,6 +10,6 @@ Semantic paint is a toolkit for attaching metadata (think different colored high
 | Palette | A set of colors that encapsulate a certain way of thinking about a canvas | *writer feedback* |
 | Gallery | A server for holding brush strokes | An ipfs node hosting a particular structure |
 | Painter | A person who applies brushstrokes and makes them publicly available in a gallery | Me |
-| Brush Stroke | A color together with some targeting code that suffices to attach that color to the canvas |
+| Brush Stroke | A color together with some targeting code that suffices to attach that color to the canvas | *recommended edit* on the line matching the regex `^Sem.*ta$`: omit the substring matching regex `, and.*$`|
 
 Semantic paint isn't done yet.  This repo contains some brush-stroke targeting code that will ultimately be referenced by several palettes.
