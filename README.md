@@ -8,7 +8,6 @@ Semantic paint is a toolkit for attaching metadata (think different colored high
 Ultimately, this means that when you run across some data in the wild, you can analyze its structure and query for brushstrokes.  If you find them, then they will contain the necessary code to generate an object model for that data, which might be useful for working with it.  Further, if you apply brush strokes, those get made available for other people working with the same data.
 
 
-
 | Term | Meaning | Examples |
 |:--|:--|:--|
 | Canvas | The raw data, which the painter might not have permission to modify| A draft of an essay |
